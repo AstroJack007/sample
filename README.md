@@ -18,18 +18,22 @@ const con = new Client({
     password: "your_postgres_password",
     database: "registries"
 });
-4. Backend Setup:
+3. Backend Setup:
  cd backend
 
-# Install dependencies
+ Install dependencies
 npm install
 
-# Initialize database schema and seed data
+Initialize database schema and seed data
 node -e "require('./seed.js').initializeSchema()"
 
-# Start the server
+Start the server
 node index.js
 The server will run on port 3000 by default. You should see the message "Server running on port 3000" and "Connected to the database" if everything is working correctly.
 
-6. Frontend Setup
-The Vite development server should start and display a URL where you can access the application (typically http://localhost:5173).
+4. Frontend Setup
+cd frontend
+
+npm install
+
+npm run dev
