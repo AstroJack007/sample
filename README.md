@@ -1,6 +1,4 @@
-Here’s a **cleaned up and more attractive version** of your GitHub README for the **Karmayogi – Government Training Infrastructure Platform**:
 
----
 
 # 🌐 Karmayogi – Government Training Infrastructure Platform
 
