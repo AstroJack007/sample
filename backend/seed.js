@@ -14,16 +14,23 @@ async function initializeSchema() {
         console.log("Connected to the database");
 
         await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name TEXT,
+                email TEXT UNIQUE,
+                password TEXT,
+                role TEXT CHECK (role IN ('admin', 'user')) DEFAULT 'user'
+            );
+        `);
+        await client.query(`
             CREATE TABLE IF NOT EXISTS institutions (
                 id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL,
-                address TEXT,
-                city TEXT,
-                state TEXT,
-                pincode TEXT
+                location TEXT,
+                type TEXT,
+                description TEXT
             );
         `);
-
         await client.query(`
             CREATE TABLE IF NOT EXISTS assets (
                 id SERIAL PRIMARY KEY,
@@ -53,14 +60,7 @@ async function initializeSchema() {
         `);
 
      
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                name TEXT,
-                email TEXT UNIQUE,
-                role TEXT CHECK (role IN ('admin', 'user')) DEFAULT 'user'
-            );
-        `);
+       
 
         
         await client.query(`
@@ -92,10 +92,19 @@ async function insertSampleData() {
     try {
         
         await client.query(`
-            INSERT INTO institutions (name, address, city, state, pincode)
+            INSERT INTO institutions (name, location, type, description)
             VALUES 
-            ('IIT Delhi', 'Hauz Khas', 'New Delhi', 'Delhi', '110016'),
-            ('NIT Warangal', 'NIT Campus', 'Warangal', 'Telangana', '506004')
+            ('IIT Delhi', 'New Delhi', 'University', 'Indian Institute of Technology'),
+            ('NIT Trichy', 'Tiruchirappalli', 'University', 'National Institute of Technology')
+            ON CONFLICT DO NOTHING;
+        `);
+        
+        await client.query(`
+            INSERT INTO users (name, email, password, role)
+            VALUES 
+            ('Admin User', 'admin@karmayogi.gov.in', 'admin123', 'admin'),
+            ('Regular User', 'iit.delhi@karmayogi.in', 'user123', 'user'),
+            ('Regular User', 'nit.trichy@karmayogi.in', 'user123', 'user')
             ON CONFLICT DO NOTHING;
         `);
 

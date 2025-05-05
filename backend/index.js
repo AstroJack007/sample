@@ -66,3 +66,83 @@ app.get('/amenities', async(req, res) => {
         res.status(500).json({error: "Error fetching amenities"});
     }
 });
+
+app.post('/bookings', async (req, res) => {
+  try {
+    const { asset_id, name, email, start_time, end_time } = req.body;
+
+    const clash = await con.query(`
+      SELECT * FROM bookings 
+      WHERE asset_id = $1 
+      AND status = 'approved'
+      AND (
+        (start_time <= $2 AND end_time >= $2) OR 
+        (start_time <= $3 AND end_time >= $3) OR
+        (start_time >= $2 AND end_time <= $3)
+      )
+    `, [asset_id, start_time, end_time]);
+
+    if (clash.rows.length > 0) {
+      return res.status(409).json({ error: "Asset already booked for this time." });
+    }
+
+    let uid;
+    const uChk = await con.query('SELECT id FROM users WHERE email = $1', [email]);
+
+    if (uChk.rows.length > 0) {
+      uid = uChk.rows[0].id;
+    } else {
+      const newU = await con.query(
+        'INSERT INTO users (name, email, role) VALUES ($1, $2, $3) RETURNING id',
+        [name, email, 'user']
+      );
+      uid = newU.rows[0].id;
+    }
+
+    const booked = await con.query(
+      'INSERT INTO bookings (asset_id, user_id, start_time, end_time, status) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [asset_id, uid, start_time, end_time, 'pending']
+    );
+
+    res.status(201).json({
+      message: "Booking request sent. Awaiting approval.",
+      booking_id: booked.rows[0].id
+    });
+  } catch (err) {
+    console.error("Booking error:", err);
+    res.status(500).json({ error: "Couldn't create booking" });
+  }
+});
+
+app.get('/admin/bookings', async (req, res) => {
+  try {
+    const data = await con.query(`
+      SELECT b.*, a.name as asset_name, u.name as user_name, u.email as user_email
+      FROM bookings b
+      JOIN assets a ON b.asset_id = a.id
+      JOIN users u ON b.user_id = u.id
+      ORDER BY b.created_at DESC
+    `);
+    res.json(data.rows);
+  } catch (err) {
+    console.error("Fetch error:", err);
+    res.status(500).json({ error: "Couldn't fetch bookings" });
+  }
+});
+
+app.put('/admin/bookings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    await con.query('UPDATE bookings SET status = $1 WHERE id = $2', [status, id]);
+    res.json({ message: "Status updated" });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ error: "Couldn't update status" });
+  }
+});
